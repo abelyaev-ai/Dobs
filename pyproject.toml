@@ -1,0 +1,116 @@
+[tool.poetry]
+name = "shipping-price-search"
+version = "0.1.0"
+description = ""
+authors = [
+    "Alexander Belyaev <belazzbelazz@gmail.com>"
+]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+pdfplumber = ">=0.11.0,<0.12.0"
+llama-index = ">=0.10.0,<0.11.0"
+llama-index-llms-openai = ">=0.1.0,<0.2.0"
+llama-index-embeddings-openai = ">=0.1.0,<0.2.0"
+llama-index-vector-stores-faiss = ">=0.1.0,<0.2.0"
+faiss-cpu = ">=1.8.0,<2.0.0"
+fastapi = ">=0.109.0,<0.110.0"
+streamlit = ">=1.31.0,<2.0.0"
+python-dotenv = ">=1.0.0,<2.0.0"
+pandas = ">=2.2.0,<3.0.0"
+pydantic = ">=2.6.0,<3.0.0"
+pydantic-settings = ">=2.0.0,<3.0.0"
+python-multipart = ">=0.0.9,<0.0.10"
+uvicorn = {extras = ["standard"], version = ">=0.27.0,<0.28.0"}
+tabulate = ">=0.9.0,<0.10.0"
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+black = "^24.0.0"
+ruff = "^0.2.0"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = ["-v", "--strict-markers", "--tb=short"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "network: marks tests as requiring network access",
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*", "**/__init__.py"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "pass",
+]
+

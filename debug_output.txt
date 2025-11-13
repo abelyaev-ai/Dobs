@@ -1,0 +1,612 @@
+
+====================================================================================================
+  COMPREHENSIVE DEBUG: Testing ALL 5 Example Queries
+====================================================================================================
+
+This script will show the complete filtering pipeline for each query:
+  1. Parsed service, zone, weight
+  2. How many documents pass service filter
+  3. How many documents pass zone filter
+  4. The actual page numbers sent to LLM (first 5)
+  5. Table text snippets from first page
+  6. Verification if filtering is CORRECT or WRONG
+
+🔧 Loading document index...
+✅ Index loaded successfully
+
+====================================================================================================
+  QUERY #1: Ground zone 6 12 lb
+====================================================================================================
+
+📋 PARSED QUERY:
+   Service:  Ground
+   Zone:     6
+   Weight:   12.0 lb
+   Carrier:  NOT SPECIFIED
+
+📊 TOTAL DOCUMENTS IN INDEX: 111
+
+----------------------------------------------------------------------------------------------------
+  STEP 1: Filter by Service Type
+----------------------------------------------------------------------------------------------------
+Service filter: 'Ground'
+Documents matching service: 7 / 111
+
+First 5 documents with matching service:
+  1. Page 105: service_types=['Ground', 'Home Delivery'], zones=['zone f']
+  2. Page 106: service_types=['Ground', 'Home Delivery'], zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  3. Page 107: service_types=['Ground', 'Home Delivery'], zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  4. Page 108: service_types=['Ground', 'Home Delivery'], zones=[]
+  5. Page 109: service_types=['Ground', 'Home Delivery'], zones=[]
+
+----------------------------------------------------------------------------------------------------
+  STEP 2: Filter by Zone
+----------------------------------------------------------------------------------------------------
+Zone filter: '6' (normalized: '6')
+Documents matching zone: 6 / 7
+
+Documents with matching zone:
+  1. Page 106: zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  2. Page 107: zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  3. Page 108: zones=[]
+  4. Page 109: zones=[]
+  5. Page 110: zones=[]
+  6. Page 111: zones=[]
+
+----------------------------------------------------------------------------------------------------
+  STEP 3: Sort by Page Number & Take First 5
+----------------------------------------------------------------------------------------------------
+Documents sorted by page number
+Taking first 5 documents to pass to LLM
+
+📄 FINAL 5 DOCUMENTS SENT TO LLM:
+   Pages: 106, 107, 108, 109, 110
+
+----------------------------------------------------------------------------------------------------
+  STEP 4: Table Text Snippets (Column Headers + First 3 Rows)
+----------------------------------------------------------------------------------------------------
+
+📃 Document 1 (Page 106):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: ['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3   | Col_4   | Col_5   | Col_6   | Col_7   | Col_8   |
+   |:-----------|:--------|:------------------------------------------|:--------|:--------|:--------|:--------|:--------|:--------|
+   | Delivery   |         | 1–5 days based on distance to destination |         |         |         |         |         |         |
+   | commitment |         |                                           |         |         |         |         |         |         |
+   | Zones2     |         | 2                                         | 3       | 4       | 5       | 6       | 7       | 8       |
+   | .sbl       | 51lbs.  | $ 27.68                                   | $ 34.62 | $ 41.62 | $ 50.48 | $ 64.09 | $ 77.42 | $ 86.95 |
+   | ni         |         |                                           |         |         |         |         |         |         |
+   | thgiew     |         |                                           |         |         |         |         |         |         |
+   | mumixaM    |         |                                           |         |         |         |         |         |         |
+   |            | 52      | 27.69                                     | 34.63   | 41.64   | 50.51   | 64.10   | 77.44   | 86.96   |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 2 (Page 107):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: ['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3   | Col_4   | Col_5   | Col_6   | Col_7   | Col_8   |
+   |:-----------|:--------|:------------------------------------------|:--------|:--------|:--------|:--------|:--------|:--------|
+   | Delivery   |         | 1–5 days based on distance to destination |         |         |         |         |         |         |
+   | commitment |         |                                           |         |         |         |         |         |         |
+   | Zones2     |         | 2                                         | 3       | 4       | 5       | 6       | 7       | 8       |
+   | .sbl       | 101lbs. | $ 70.88                                   | $ 71.72 | $ 77.83 | $ 85.13 | $100.21 | $111.01 | $122.27 |
+   | ni         |         |                                           |         |         |         |         |         |         |
+   | thgiew     |         |                                           |         |         |         |         |         |         |
+   | mumixaM    |         |                                           |         |         |         |         |         |         |
+   |            | 102     | 71.56                                     | 71.73   | 78.57   | 85.14   | 100.22  | 111.02  | 122.28  |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 3 (Page 108):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3        | Col_4       | Col_5   | Col_6     | Col_7      | Col_8       | Col_9   |
+   |:-----------|:--------|:------------------------------------------|:-------------|:------------|:--------|:----------|:-----------|:------------|:--------|
+   | Delivery   |         | 1–7 days based on distance to destination |              |             |         |           |            |             |         |
+   | commitment |         |                                           |              |             |         |           |            |             |         |
+   | Zones      |         | 17                                        | 22           | 23          | 25      | 9         | 14         | 92          | 96      |
+   |            |         | To Alaska                                 | Intra-Alaska | From Alaska |         | To Hawaii | Intra-Oahu | From Hawaii |         |
+   | .sbl       | 1lb.    | $ 40.84                                   | $ 9.53       | $ 14.22     | $ 14.68 | $ 40.84   | $ 9.30     | $ 14.22     | $ 14.68 |
+   | ni         |         |                                           |              |             |         |           |            |             | 16.72   |
+   | thgiew     |         |                                           |              |             |         |           |            |             | 18.56   |
+   | mumixaM    |         |                                           |              |             |         |           |            |             | 21.43   |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 4 (Page 109):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3        | Col_4       | Col_5   | Col_6     | Col_7      | Col_8       | Col_9   |
+   |:-----------|:--------|:------------------------------------------|:-------------|:------------|:--------|:----------|:-----------|:------------|:--------|
+   | Delivery   |         | 1–7 days based on distance to destination |              |             |         |           |            |             |         |
+   | commitment |         |                                           |              |             |         |           |            |             |         |
+   | Zones      |         | 17                                        | 22           | 23          | 25      | 9         | 14         | 92          | 96      |
+   |            |         | To Alaska                                 | Intra-Alaska | From Alaska |         | To Hawaii | Intra-Oahu | From Hawaii |         |
+   | .sbl       | 51lbs.  | $235.50                                   | $ 28.63      | $121.84     | $138.94 | $235.50   | $ 16.36    | $121.84     | $138.94 |
+   | ni         |         |                                           |              |             |         |           |            |             | 140.69  |
+   | thgiew     |         |                                           |              |             |         |           |            |             | 142.52  |
+   | mumixaM    |         |                                           |              |             |         |           |            |             | 144.26  |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 5 (Page 110):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3        | Col_4       | Col_5   | Col_6     | Col_7      | Col_8       | Col_9   |
+   |:-----------|:--------|:------------------------------------------|:-------------|:------------|:--------|:----------|:-----------|:------------|:--------|
+   | Delivery   |         | 1–7 days based on distance to destination |              |             |         |           |            |             |         |
+   | commitment |         |                                           |              |             |         |           |            |             |         |
+   | Zones      |         | 17                                        | 22           | 23          | 25      | 9         | 14         | 92          | 96      |
+   |            |         | To Alaska                                 | Intra-Alaska | From Alaska |         | To Hawaii | Intra-Oahu | From Hawaii |         |
+   | .sbl       | 101lbs. | $416.25                                   | $ 76.81      | $187.10     | $208.46 | $416.25   | $ 58.89    | $187.10     | $208.46 |
+   | ni         |         |                                           |              |             |         |           |            |             | 209.75  |
+   | thgiew     |         |                                           |              |             |         |           |            |             | 211.14  |
+   | mumixaM    |         |                                           |              |             |         |           |            |             | 212.45  |
+   ------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+  STEP 5: Verification - Is This Filtering CORRECT?
+----------------------------------------------------------------------------------------------------
+
+   ✅ FILTERING APPEARS CORRECT
+
+
+====================================================================================================
+  QUERY #2: Home Delivery zone 3 5 lb
+====================================================================================================
+
+📋 PARSED QUERY:
+   Service:  Home Delivery
+   Zone:     3
+   Weight:   5.0 lb
+   Carrier:  NOT SPECIFIED
+
+📊 TOTAL DOCUMENTS IN INDEX: 111
+
+----------------------------------------------------------------------------------------------------
+  STEP 1: Filter by Service Type
+----------------------------------------------------------------------------------------------------
+Service filter: 'Home Delivery'
+Documents matching service: 6 / 111
+
+First 5 documents with matching service:
+  1. Page 105: service_types=['Ground', 'Home Delivery'], zones=['zone f']
+  2. Page 106: service_types=['Ground', 'Home Delivery'], zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  3. Page 107: service_types=['Ground', 'Home Delivery'], zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  4. Page 108: service_types=['Ground', 'Home Delivery'], zones=[]
+  5. Page 109: service_types=['Ground', 'Home Delivery'], zones=[]
+
+----------------------------------------------------------------------------------------------------
+  STEP 2: Filter by Zone
+----------------------------------------------------------------------------------------------------
+Zone filter: '3' (normalized: '3')
+Documents matching zone: 5 / 6
+
+Documents with matching zone:
+  1. Page 106: zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  2. Page 107: zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+  3. Page 108: zones=[]
+  4. Page 109: zones=[]
+  5. Page 110: zones=[]
+
+----------------------------------------------------------------------------------------------------
+  STEP 3: Sort by Page Number & Take First 5
+----------------------------------------------------------------------------------------------------
+Documents sorted by page number
+Taking first 5 documents to pass to LLM
+
+📄 FINAL 5 DOCUMENTS SENT TO LLM:
+   Pages: 106, 107, 108, 109, 110
+
+----------------------------------------------------------------------------------------------------
+  STEP 4: Table Text Snippets (Column Headers + First 3 Rows)
+----------------------------------------------------------------------------------------------------
+
+📃 Document 1 (Page 106):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: ['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3   | Col_4   | Col_5   | Col_6   | Col_7   | Col_8   |
+   |:-----------|:--------|:------------------------------------------|:--------|:--------|:--------|:--------|:--------|:--------|
+   | Delivery   |         | 1–5 days based on distance to destination |         |         |         |         |         |         |
+   | commitment |         |                                           |         |         |         |         |         |         |
+   | Zones2     |         | 2                                         | 3       | 4       | 5       | 6       | 7       | 8       |
+   | .sbl       | 51lbs.  | $ 27.68                                   | $ 34.62 | $ 41.62 | $ 50.48 | $ 64.09 | $ 77.42 | $ 86.95 |
+   | ni         |         |                                           |         |         |         |         |         |         |
+   | thgiew     |         |                                           |         |         |         |         |         |         |
+   | mumixaM    |         |                                           |         |         |         |         |         |         |
+   |            | 52      | 27.69                                     | 34.63   | 41.64   | 50.51   | 64.10   | 77.44   | 86.96   |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 2 (Page 107):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: ['Zone 3', 'Zone 7', 'Zone 4', 'Zone 8', 'Zone 5', 'Zone 2', 'Zone 6']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3   | Col_4   | Col_5   | Col_6   | Col_7   | Col_8   |
+   |:-----------|:--------|:------------------------------------------|:--------|:--------|:--------|:--------|:--------|:--------|
+   | Delivery   |         | 1–5 days based on distance to destination |         |         |         |         |         |         |
+   | commitment |         |                                           |         |         |         |         |         |         |
+   | Zones2     |         | 2                                         | 3       | 4       | 5       | 6       | 7       | 8       |
+   | .sbl       | 101lbs. | $ 70.88                                   | $ 71.72 | $ 77.83 | $ 85.13 | $100.21 | $111.01 | $122.27 |
+   | ni         |         |                                           |         |         |         |         |         |         |
+   | thgiew     |         |                                           |         |         |         |         |         |         |
+   | mumixaM    |         |                                           |         |         |         |         |         |         |
+   |            | 102     | 71.56                                     | 71.73   | 78.57   | 85.14   | 100.22  | 111.02  | 122.28  |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 3 (Page 108):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3        | Col_4       | Col_5   | Col_6     | Col_7      | Col_8       | Col_9   |
+   |:-----------|:--------|:------------------------------------------|:-------------|:------------|:--------|:----------|:-----------|:------------|:--------|
+   | Delivery   |         | 1–7 days based on distance to destination |              |             |         |           |            |             |         |
+   | commitment |         |                                           |              |             |         |           |            |             |         |
+   | Zones      |         | 17                                        | 22           | 23          | 25      | 9         | 14         | 92          | 96      |
+   |            |         | To Alaska                                 | Intra-Alaska | From Alaska |         | To Hawaii | Intra-Oahu | From Hawaii |         |
+   | .sbl       | 1lb.    | $ 40.84                                   | $ 9.53       | $ 14.22     | $ 14.68 | $ 40.84   | $ 9.30     | $ 14.22     | $ 14.68 |
+   | ni         |         |                                           |              |             |         |           |            |             | 16.72   |
+   | thgiew     |         |                                           |              |             |         |           |            |             | 18.56   |
+   | mumixaM    |         |                                           |              |             |         |           |            |             | 21.43   |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 4 (Page 109):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3        | Col_4       | Col_5   | Col_6     | Col_7      | Col_8       | Col_9   |
+   |:-----------|:--------|:------------------------------------------|:-------------|:------------|:--------|:----------|:-----------|:------------|:--------|
+   | Delivery   |         | 1–7 days based on distance to destination |              |             |         |           |            |             |         |
+   | commitment |         |                                           |              |             |         |           |            |             |         |
+   | Zones      |         | 17                                        | 22           | 23          | 25      | 9         | 14         | 92          | 96      |
+   |            |         | To Alaska                                 | Intra-Alaska | From Alaska |         | To Hawaii | Intra-Oahu | From Hawaii |         |
+   | .sbl       | 51lbs.  | $235.50                                   | $ 28.63      | $121.84     | $138.94 | $235.50   | $ 16.36    | $121.84     | $138.94 |
+   | ni         |         |                                           |              |             |         |           |            |             | 140.69  |
+   | thgiew     |         |                                           |              |             |         |           |            |             | 142.52  |
+   | mumixaM    |         |                                           |              |             |         |           |            |             | 144.26  |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 5 (Page 110):
+   Service Types: ['Ground', 'Home Delivery']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Service    | Col_1   | FedEx Ground® and FedEx Home Delivery®    | Col_3        | Col_4       | Col_5   | Col_6     | Col_7      | Col_8       | Col_9   |
+   |:-----------|:--------|:------------------------------------------|:-------------|:------------|:--------|:----------|:-----------|:------------|:--------|
+   | Delivery   |         | 1–7 days based on distance to destination |              |             |         |           |            |             |         |
+   | commitment |         |                                           |              |             |         |           |            |             |         |
+   | Zones      |         | 17                                        | 22           | 23          | 25      | 9         | 14         | 92          | 96      |
+   |            |         | To Alaska                                 | Intra-Alaska | From Alaska |         | To Hawaii | Intra-Oahu | From Hawaii |         |
+   | .sbl       | 101lbs. | $416.25                                   | $ 76.81      | $187.10     | $208.46 | $416.25   | $ 58.89    | $187.10     | $208.46 |
+   | ni         |         |                                           |              |             |         |           |            |             | 209.75  |
+   | thgiew     |         |                                           |              |             |         |           |            |             | 211.14  |
+   | mumixaM    |         |                                           |              |             |         |           |            |             | 212.45  |
+   ------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+  STEP 5: Verification - Is This Filtering CORRECT?
+----------------------------------------------------------------------------------------------------
+
+   ✅ FILTERING APPEARS CORRECT
+
+
+====================================================================================================
+  QUERY #3: Express Saver zone 2 3 lb
+====================================================================================================
+
+📋 PARSED QUERY:
+   Service:  Express Saver
+   Zone:     2
+   Weight:   3.0 lb
+   Carrier:  NOT SPECIFIED
+
+📊 TOTAL DOCUMENTS IN INDEX: 111
+
+----------------------------------------------------------------------------------------------------
+  STEP 1: Filter by Service Type
+----------------------------------------------------------------------------------------------------
+Service filter: 'Express Saver'
+Documents matching service: 2 / 111
+
+First 5 documents with matching service:
+  1. Page 31: service_types=['Standard Overnight', 'Express Saver', 'Priority Overnight', '2Day', 'First Overnight'], zones=['Zone 2', 'zone f']
+  2. Page 32: service_types=['Standard Overnight', 'Express Saver', 'Priority Overnight', '2Day', 'First Overnight'], zones=['zone f', 'Zone 8']
+
+----------------------------------------------------------------------------------------------------
+  STEP 2: Filter by Zone
+----------------------------------------------------------------------------------------------------
+Zone filter: '2' (normalized: '2')
+Documents matching zone: 1 / 2
+
+Documents with matching zone:
+  1. Page 31: zones=['Zone 2', 'zone f']
+
+----------------------------------------------------------------------------------------------------
+  STEP 3: Sort by Page Number & Take First 5
+----------------------------------------------------------------------------------------------------
+Documents sorted by page number
+Taking first 5 documents to pass to LLM
+
+📄 FINAL 5 DOCUMENTS SENT TO LLM:
+   Pages: 31
+
+----------------------------------------------------------------------------------------------------
+  STEP 4: Table Text Snippets (Column Headers + First 3 Rows)
+----------------------------------------------------------------------------------------------------
+
+📃 Document 1 (Page 31):
+   Service Types: ['Standard Overnight', 'Express Saver', 'Priority Overnight', '2Day', 'First Overnight']
+   Zones: ['Zone 2', 'zone f']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Weight           | FedEx        | FedEx        | FedEx        | FedEx        | FedEx   | FedEx     |
+   |                  | First        | Priority     | Standard     | 2Day® A.M.   | 2Day®   | Express   |
+   |                  | Overnight®   | Overnight®   | Overnight®   |              |         | Saver®    |
+   |:-----------------|:-------------|:-------------|:-------------|:-------------|:--------|:----------|
+   | 100–499 lbs.     | $ 3.20       | $ 2.89       | $ 2.83       | $ 2.40       | $ 1.91  | $ 1.78    |
+   | 500–999 lbs.     | 3.18         | 2.87         | 2.81         | 2.38         | 1.89    | 1.76      |
+   | 1,000–1,999 lbs. | 3.16         | 2.85         | 2.79         | 2.36         | 1.87    | 1.74      |
+   | 2,000+ lbs.      | 3.14         | 2.83         | 2.77         | 2.34         | 1.85    | 1.72      |
+   ------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+  STEP 5: Verification - Is This Filtering CORRECT?
+----------------------------------------------------------------------------------------------------
+
+   ✅ FILTERING APPEARS CORRECT
+
+
+====================================================================================================
+  QUERY #4: fedx 2day zone 5 three pounds
+====================================================================================================
+
+📋 PARSED QUERY:
+   Service:  2Day
+   Zone:     5
+   Weight:   3.0 lb
+   Carrier:  FedEx
+
+📊 TOTAL DOCUMENTS IN INDEX: 111
+
+----------------------------------------------------------------------------------------------------
+  STEP 1: Filter by Service Type
+----------------------------------------------------------------------------------------------------
+Service filter: '2Day'
+Documents matching service: 31 / 111
+
+First 5 documents with matching service:
+  1. Page 1: service_types=['2Day'], zones=['Zone 2', 'zone f']
+  2. Page 2: service_types=['2Day'], zones=['Zone 2', 'zone f']
+  3. Page 3: service_types=['2Day'], zones=['Zone 2', 'zone f']
+  4. Page 4: service_types=['2Day'], zones=['Zone 3', 'zone f']
+  5. Page 5: service_types=['2Day'], zones=['Zone 3', 'zone f']
+
+----------------------------------------------------------------------------------------------------
+  STEP 2: Filter by Zone
+----------------------------------------------------------------------------------------------------
+Zone filter: '5' (normalized: '5')
+Documents matching zone: 11 / 31
+
+Documents with matching zone:
+  1. Page 10: zones=['Zone 5', 'zone f']
+  2. Page 11: zones=['Zone 5', 'zone f']
+  3. Page 12: zones=['Zone 5', 'zone f']
+  4. Page 22: zones=[]
+  5. Page 23: zones=[]
+  6. Page 24: zones=[]
+  7. Page 25: zones=[]
+  8. Page 26: zones=[]
+  9. Page 27: zones=[]
+  10. Page 28: zones=[]
+
+----------------------------------------------------------------------------------------------------
+  STEP 3: Sort by Page Number & Take First 5
+----------------------------------------------------------------------------------------------------
+Documents sorted by page number
+Taking first 5 documents to pass to LLM
+
+📄 FINAL 5 DOCUMENTS SENT TO LLM:
+   Pages: 10, 11, 12, 22, 23
+
+----------------------------------------------------------------------------------------------------
+  STEP 4: Table Text Snippets (Column Headers + First 3 Rows)
+----------------------------------------------------------------------------------------------------
+
+📃 Document 1 (Page 10):
+   Service Types: ['2Day']
+   Zones: ['Zone 5', 'zone f']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Delivery      | Col_1   | Next day by       | Next day by     | Next day by   | 2nd day by      | 2nd day by   | 3rd day by   |
+   | commitment3   |         | 8 or 8:30 a.m.4   | 10:30 a.m. or   | 5 p.m.6       | 10:30 a.m. or   | 5 p.m.6      | 5 p.m.6      |
+   |               |         |                   | 11 a.m. 5       |               | 11 a.m.5        |              |              |
+   |:--------------|:--------|:------------------|:----------------|:--------------|:----------------|:-------------|:-------------|
+   | FedEx®        |         | FedEx             | FedEx           | FedEx         | FedEx           | FedEx        | FedEx        |
+   | Envelope      |         | First             | Priority        | Standard      | 2Day® A.M.      | 2Day®        | Express      |
+   |               |         | Overnight®        | Overnight®      | Overnight®    |                 |              | Saver®       |
+   | up to 8 oz.   |         | $ 87.22           | $ 56.22         | $ 53.51       | $ 35.97         | $ 33.31      | $ 29.88      |
+   | FedEx® Pak    |         | *                 | *               | *             | *               | *            | *            |
+   | Fed           |         |                   |                 |               |                 |              |              |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 2 (Page 11):
+   Service Types: ['2Day']
+   Zones: ['Zone 5', 'zone f']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Delivery      | Col_1   | Next day by       | Next day by     | Next day by   | 2nd day by      | 2nd day by   | 3rd day by   |
+   | commitment3   |         | 8 or 8:30 a.m.4   | 10:30 a.m. or   | 5 p.m.6       | 10:30 a.m. or   | 5 p.m.6      | 5 p.m.6      |
+   |               |         |                   | 11 a.m. 5       |               | 11 a.m.5        |              |              |
+   |:--------------|:--------|:------------------|:----------------|:--------------|:----------------|:-------------|:-------------|
+   | Service       |         | FedEx             | FedEx           | FedEx         | FedEx           | FedEx        | FedEx        |
+   |               |         | First             | Priority        | Standard      | 2Day® A.M.      | 2Day®        | Express      |
+   |               |         | Overnight®        | Overnight®      | Overnight®    |                 |              | Saver®       |
+   | .sbl          | 50lbs.  | $ 489.60          | $ 458.60        | $ 441.13      | $ 302.00        | $ 234.54     | $ 198.09     |
+   | ni            | 51      | 533.77            | 502.77          | 477.59        | 312.82          | 243.39       | 205.48       |
+   | thgiew        | 52      | 543.62            | 512.62          | 487.34        | 313.93          | 256.78       | 206.22       |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 3 (Page 12):
+   Service Types: ['2Day']
+   Zones: ['Zone 5', 'zone f']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Delivery      | Col_1   | Next day by       | Next day by     | Next day by   | 2nd day by      | 2nd day by   | 3rd day by   |
+   | commitment3   |         | 8 or 8:30 a.m.4   | 10:30 a.m. or   | 5 p.m.6       | 10:30 a.m. or   | 5 p.m.6      | 5 p.m.6      |
+   |               |         |                   | 11 a.m. 5       |               | 11 a.m.5        |              |              |
+   |:--------------|:--------|:------------------|:----------------|:--------------|:----------------|:-------------|:-------------|
+   | Service       |         | FedEx             | FedEx           | FedEx         | FedEx           | FedEx        | FedEx        |
+   |               |         | First             | Priority        | Standard      | 2Day® A.M.      | 2Day®        | Express      |
+   |               |         | Overnight®        | Overnight®      | Overnight®    |                 |              | Saver®       |
+   | .sbl          | 101lbs. | $ 916.07          | $ 884.76        | $ 866.58      | $ 591.86        | $ 462.58     | $ 410.06     |
+   | ni            | 102     | 925.14            | 893.52          | 875.16        | 597.72          | 467.16       | 414.12       |
+   | thgiew        | 103     | 934.21            | 902.28          | 883.74        | 603.58          | 471.74       | 418.18       |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 4 (Page 22):
+   Service Types: ['2Day']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Zones       | Col_1   | To Alaska metro                                           | Col_3      | Col_4       | Col_5     | Col_6   |
+   |:------------|:--------|:----------------------------------------------------------|:-----------|:------------|:----------|:--------|
+   |             |         | 9                                                         |            |             |           |         |
+   |             |         | Next day by Next day by Next day by 2nd day by 2nd day by |            |             |           |         |
+   |             |         | 9 a.m. 10:30 a.m.3 5 p.m.4 10:30 a.m.5 5 p.m.6            |            |             |           |         |
+   | Delivery    |         |                                                           |            |             |           |         |
+   | commitment2 |         |                                                           |            |             |           |         |
+   | FedEx®      |         | FedEx                                                     | FedEx      | FedEx       | FedEx     | FedEx   |
+   | Envelope    |         | First                                                     | Priority   | Standard    | 2Day®A.M. | 2Day®   |
+   |             |         | Overnight®7                                               | Overnight® | Overnight®8 |           |         |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 5 (Page 23):
+   Service Types: ['2Day']
+   Zones: []
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Zones       | Col_1   | To Alaska metro   | Col_3       | Col_4       | Col_5       | Col_6      |
+   |:------------|:--------|:------------------|:------------|:------------|:------------|:-----------|
+   |             |         | 9                 |             |             |             |            |
+   | Delivery    |         | Next day by       | Next day by | Next day by | 2nd day by  | 2nd day by |
+   | commitment2 |         | 9 a.m.            | 10:30 a.m.3 | 5 p.m.4     | 10:30 a.m.5 | 5 p.m.6    |
+   | Service     |         | FedEx             | FedEx       | FedEx       | FedEx       | FedEx      |
+   |             |         | First             | Priority    | Standard    | 2Day®A.M.   | 2Day®      |
+   |             |         | Overnight®7       | Overnight®  | Overnight®8 |             |            |
+   | .sbl        | 50lbs.  | $ 665.01          | $ 634.01    | $ 554.43    | $ 518.35    | $ 425.56   |
+   | ni          | 51      | 690.51            | 659.51      | 591.63      | 537.12      | 439.13     |
+   ------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+  STEP 5: Verification - Is This Filtering CORRECT?
+----------------------------------------------------------------------------------------------------
+
+   ✅ FILTERING APPEARS CORRECT
+
+
+====================================================================================================
+  QUERY #5: Priority Overnight zone 2 3 lb
+====================================================================================================
+
+📋 PARSED QUERY:
+   Service:  Priority Overnight
+   Zone:     2
+   Weight:   3.0 lb
+   Carrier:  NOT SPECIFIED
+
+📊 TOTAL DOCUMENTS IN INDEX: 111
+
+----------------------------------------------------------------------------------------------------
+  STEP 1: Filter by Service Type
+----------------------------------------------------------------------------------------------------
+Service filter: 'Priority Overnight'
+Documents matching service: 3 / 111
+
+First 5 documents with matching service:
+  1. Page 30: service_types=['Priority Overnight'], zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 5', 'Zone 2']
+  2. Page 31: service_types=['Standard Overnight', 'Express Saver', 'Priority Overnight', '2Day', 'First Overnight'], zones=['Zone 2', 'zone f']
+  3. Page 32: service_types=['Standard Overnight', 'Express Saver', 'Priority Overnight', '2Day', 'First Overnight'], zones=['zone f', 'Zone 8']
+
+----------------------------------------------------------------------------------------------------
+  STEP 2: Filter by Zone
+----------------------------------------------------------------------------------------------------
+Zone filter: '2' (normalized: '2')
+Documents matching zone: 2 / 3
+
+Documents with matching zone:
+  1. Page 30: zones=['Zone 3', 'Zone 7', 'Zone 4', 'Zone 5', 'Zone 2']
+  2. Page 31: zones=['Zone 2', 'zone f']
+
+----------------------------------------------------------------------------------------------------
+  STEP 3: Sort by Page Number & Take First 5
+----------------------------------------------------------------------------------------------------
+Documents sorted by page number
+Taking first 5 documents to pass to LLM
+
+📄 FINAL 5 DOCUMENTS SENT TO LLM:
+   Pages: 30, 31
+
+----------------------------------------------------------------------------------------------------
+  STEP 4: Table Text Snippets (Column Headers + First 3 Rows)
+----------------------------------------------------------------------------------------------------
+
+📃 Document 1 (Page 30):
+   Service Types: ['Priority Overnight']
+   Zones: ['Zone 3', 'Zone 7', 'Zone 4', 'Zone 5', 'Zone 2']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Zones       | Col_1   | Intra-Hawaii   | Col_3       |
+   |:------------|:--------|:---------------|:------------|
+   |             |         | Within islands |             |
+   | Delivery    |         | Next day by    | Next day by |
+   | commitment2 |         | 5 p.m.3        | 5 p.m.      |
+   | FedEx®      |         | FedEx          | FedEx       |
+   | Envelope    |         | First          | Priority    |
+   |             |         | Overnight®     | Overnight®  |
+   | up to 8 oz. |         | $ 38.00        | $ 7.00      |
+   | .sbl        | 1lb.    | $ 38.00        | $ 7.00      |
+   ------------------------------------------------------------------------------------------
+
+📃 Document 2 (Page 31):
+   Service Types: ['Standard Overnight', 'Express Saver', 'Priority Overnight', '2Day', 'First Overnight']
+   Zones: ['Zone 2', 'zone f']
+   Table Text Preview:
+   ------------------------------------------------------------------------------------------
+   | Weight           | FedEx        | FedEx        | FedEx        | FedEx        | FedEx   | FedEx     |
+   |                  | First        | Priority     | Standard     | 2Day® A.M.   | 2Day®   | Express   |
+   |                  | Overnight®   | Overnight®   | Overnight®   |              |         | Saver®    |
+   |:-----------------|:-------------|:-------------|:-------------|:-------------|:--------|:----------|
+   | 100–499 lbs.     | $ 3.20       | $ 2.89       | $ 2.83       | $ 2.40       | $ 1.91  | $ 1.78    |
+   | 500–999 lbs.     | 3.18         | 2.87         | 2.81         | 2.38         | 1.89    | 1.76      |
+   | 1,000–1,999 lbs. | 3.16         | 2.85         | 2.79         | 2.36         | 1.87    | 1.74      |
+   | 2,000+ lbs.      | 3.14         | 2.83         | 2.77         | 2.34         | 1.85    | 1.72      |
+   ------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+  STEP 5: Verification - Is This Filtering CORRECT?
+----------------------------------------------------------------------------------------------------
+
+   ✅ FILTERING APPEARS CORRECT
+
+
+====================================================================================================
+  SUMMARY
+====================================================================================================
+
+Review the verification sections above to identify any filtering issues.
+Look for:
+  - ❌ Indicators showing WRONG documents are being filtered
+  - ⚠️  Warnings about potential mismatches
+  - ✅ Confirmations that filtering is correct
+

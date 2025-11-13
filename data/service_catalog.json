@@ -1,0 +1,22 @@
+{
+  "services": [
+    "FedEx 2Day",
+    "FedEx 2Day A.M.",
+    "FedEx Express Multiweight",
+    "FedEx Express Saver",
+    "FedEx First Overnight",
+    "FedEx Ground",
+    "FedEx Ground Multiweight",
+    "FedEx Home Delivery",
+    "FedEx International Economy",
+    "FedEx International Express Freight",
+    "FedEx International Ground",
+    "FedEx International Premium",
+    "FedEx International Priority",
+    "FedEx International Priority Express",
+    "FedEx Priority Overnight",
+    "FedEx SameDay",
+    "FedEx Standard Overnight"
+  ],
+  "source": "data/pdfs/FedEx_Standard_List_Rates_2025.pdf"
+}
