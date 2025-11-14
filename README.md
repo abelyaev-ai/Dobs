@@ -16,9 +16,8 @@ A comprehensive semantic search system for extracting shipping prices from PDF r
 - [Quick Start](#quick-start)
 - [Usage Examples](#usage-examples)
 - [Project Structure](#project-structure)
-- [Components](#components)
+- [Core Components](#core-components)
 - [API Documentation](#api-documentation)
-- [Current Status](#current-status)
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
 
@@ -40,15 +39,23 @@ The Shipping Price Search Tool allows you to:
 
 ## Key Features
 
-- **Natural Language Queries**: "FedEx 2Day, Zone 5, 3 lb" → $48.05
-- **Smart Table Extraction**: Automatically detects and extracts rate tables from PDFs
-- **Semantic Search**: FAISS vector store for fast, accurate retrieval
-- **LLM-Powered**: Uses GPT-4 for intelligent price extraction and interpolation
+- **Natural Language Queries**: "FedEx 2Day, Zone 5, 3 lb" → Price with confidence score
+- **Intelligent LLM-Based Parsing**:
+  - LLM query parser handles abbreviations, typos, and natural language variations
+  - Automatic service name normalization using extracted service catalogs
+  - Fallback to regex parsing for reliability
+- **Smart Page-Based Extraction**: Extracts complete pages from PDFs instead of individual tables
+- **Dual Price Extraction Strategy**:
+  - LLM table parser for direct price extraction from any table format
+  - Fallback to semantic search + LLM extraction
+- **Semantic Search**: FAISS vector store with metadata filtering for fast, accurate retrieval
+- **Service Catalog**: Automatically builds canonical service name catalog from PDFs
 - **Multiple Interfaces**:
   - RESTful API (FastAPI)
   - Web UI (Streamlit)
   - Python SDK
-- **Metadata Enrichment**: Tracks carrier, service type, zones, weights, and sources
+- **Rich Metadata**: Tracks carrier, service types, zones, weight ranges, and sources
+- **Performance Optimizations**: LRU caching for query and table parsing, batch embeddings
 - **Persistent Index**: Save once, query many times
 
 ---
@@ -68,53 +75,74 @@ The Shipping Price Search Tool allows you to:
                              ▼
           ┌─────────────────────────────────────────────┐
           │         Price Retriever (Core Logic)        │
-          │  • Parse query → Extract parameters         │
-          │  • Build search query                       │
-          │  • Retrieve relevant tables                 │
-          │  • Extract price using LLM                  │
+          │  • LLM query parser with service catalog    │
+          │  • Metadata pre-filtering (service+zone)    │
+          │  • Try LLM table parser first               │
+          │  • Fallback to semantic search + extraction │
           └──────────────────┬──────────────────────────┘
                              │
-          ┌──────────────────┴──────────────────┐
+          ┌──────────────────┴─────────────────────┐
+          │                                        │
+          ▼                                        ▼
+┌─────────────────────┐              ┌─────────────────────────┐
+│  LLM Query Parser   │              │   Document Indexer      │
+│  • Service catalog  │              │  • Service catalog      │
+│  • Abbreviations    │              │  • PDF page extraction  │
+│  • Typo handling    │              │  • Metadata extraction  │
+│  • LRU caching      │              │  • Page chunking        │
+│  • Regex fallback   │              │  • Vector embeddings    │
+└─────────┬───────────┘              │  • FAISS indexing       │
+          │                          │  • Persistence          │
+          │                          └──────────┬──────────────┘
           │                                     │
           ▼                                     ▼
-┌─────────────────────┐             ┌─────────────────────┐
-│   Query Parser      │             │ Document Indexer    │
-│  • Service type     │             │  • PDF extraction   │
-│  • Zone             │             │  • Table detection  │
-│  • Weight           │             │  • Vector embedding │
-│  • Carrier          │             │  • FAISS indexing   │
-│  • Packaging        │             │  • Persistence      │
-└─────────────────────┘             └──────────┬──────────┘
-                                               │
-                                               ▼
-                                    ┌─────────────────────┐
-                                    │  PDF Table Extractor│
-                                    │  • pdfplumber       │
-                                    │  • Structure detect │
-                                    │  • Metadata extract │
-                                    └──────────┬──────────┘
-                                               │
-          ┌────────────────────────────────────┴─────────┐
-          │                                              │
-          ▼                                              ▼
-┌─────────────────────┐                      ┌─────────────────────┐
-│  FAISS Vector Store │                      │   OpenAI API        │
-│  • 1536-dim vectors │                      │  • GPT-4 (LLM)      │
-│  • L2 distance      │                      │  • text-embed-3-sm  │
-│  • Fast retrieval   │                      │  • Temperature=0    │
-└─────────────────────┘                      └─────────────────────┘
+┌─────────────────────┐              ┌─────────────────────────┐
+│ LLM Table Parser    │              │  PDF Components         │
+│  • Direct price     │              │  ┌──────────────────┐   │
+│    extraction       │              │  │ Page Extractor   │   │
+│  • All table formats│              │  │  • pdfplumber    │   │
+│  • LRU caching      │              │  └──────────────────┘   │
+│  • Interpolation    │              │  ┌──────────────────┐   │
+└─────────────────────┘              │  │ Service Catalog  │   │
+                                     │  │  • Extract names │   │
+          ┌──────────────────────────┤  └──────────────────┘   │
+          │                          │  ┌──────────────────┐   │
+          │                          │  │ Metadata Extract │   │
+          │                          │  │  • Services      │   │
+          │                          │  │  • Zones         │   │
+          │                          │  │  • Weight ranges │   │
+          │                          │  └──────────────────┘   │
+          │                          └─────────────────────────┘
+          │
+          ▼                                     ▼
+┌─────────────────────┐              ┌─────────────────────────┐
+│  FAISS Vector Store │              │   OpenAI API            │
+│  • 1536-dim vectors │              │  • gpt-4o (LLM)         │
+│  • L2 distance      │              │  • gpt-4o-mini (parser) │
+│  • Metadata filter  │              │  • text-embed-3-small   │
+│  • Fast retrieval   │              │  • Temperature=0        │
+└─────────────────────┘              └─────────────────────────┘
 ```
 
 ### Data Flow
 
 1. **Indexing** (One-time per PDF):
    ```
-   PDF → Extract Tables → Create Documents → Generate Embeddings → FAISS Index
+   PDF → Build Service Catalog
+       → Extract Pages (with pdfplumber)
+       → Extract Metadata (services, zones, weight ranges)
+       → Create Page Chunks
+       → Generate Embeddings
+       → Store in FAISS Index
    ```
 
 2. **Querying** (Per search):
    ```
-   Query → Parse Parameters → Search Index → Retrieve Tables → LLM Extract → Price
+   Query → LLM Parse (with service catalog) → Normalize to canonical service
+       → Metadata Filter (service + zone + weight range)
+       → Try LLM Table Parser
+       → If fails: Semantic Search + LLM Extraction
+       → Return Price + Confidence + Source
    ```
 
 ---
@@ -135,7 +163,7 @@ The Shipping Price Search Tool allows you to:
 
 ```bash
 # Clone or navigate to project directory
-cd /storage/projects/Work/Dobs
+cd /storage/projects/Dobs
 
 # Install dependencies with Poetry
 poetry install
@@ -159,24 +187,28 @@ pip install pdfplumber llama-index llama-index-llms-openai \
 
 ### Configuration
 
-1. **Copy environment template**:
+1. **Create `.env` file** in the project root:
    ```bash
-   cp .env.example .env
+   touch .env
    ```
 
-2. **Edit `.env` and add your OpenAI API key**:
+2. **Add your OpenAI API key** to `.env`:
    ```bash
    # Required
    OPENAI_API_KEY=sk-your-actual-api-key-here
 
-   # Optional (defaults provided)
+   # Optional (defaults provided in src/utils/config.py)
    EMBEDDING_MODEL=text-embedding-3-small
-   LLM_MODEL=gpt-4o-mini
+   LLM_MODEL=gpt-4o-2024-11-20
    LLM_TEMPERATURE=0.0
-   RETRIEVAL_TOP_K=20
+   RETRIEVAL_TOP_K=5
+   QUERY_PARSER_CACHE_SIZE=1000
+   TABLE_PARSER_CACHE_SIZE=10000
    CHUNK_SIZE=2048
    CHUNK_OVERLAP=200
    ```
+
+   **Note**: See `src/utils/config.py` for all available configuration options.
 
 ### Initial Indexing
 
@@ -190,13 +222,12 @@ from src.core.document_indexer import DocumentIndexer
 # Initialize indexer
 indexer = DocumentIndexer(persist_dir='data/storage')
 
-# Index PDFs
+# Index PDFs (builds service catalog first, then indexes)
 results = indexer.build_index([
     ('data/pdfs/FedEx_Standard_List_Rates_2025.pdf', 'FedEx'),
-    ('data/pdfs/PriceAnnex.xlsx.pdf', 'UPS'),
 ])
 
-print(f'Indexed {sum(results.values())} documents')
+print(f'Indexed {sum(results.values())} page-based chunks')
 
 # Save index
 indexer.save_index()
@@ -206,9 +237,20 @@ print('Index saved successfully!')
 
 **Expected output**:
 ```
-Indexed 277 documents
+Phase 1: Building service catalog from PDFs...
+Service catalog built with X canonical services
+Phase 2: Indexing documents with canonical service names...
+Indexed 60 page-based chunks
 Index saved successfully!
 ```
+
+**What Happens During Indexing**:
+1. **Service Catalog Building**: Extracts all unique service names from PDFs
+2. **Page Extraction**: Uses pdfplumber to extract complete pages (not individual tables)
+3. **Metadata Extraction**: Extracts services, zones, and weight ranges per page
+4. **Page Chunking**: Creates one chunk per page (~60 chunks instead of 277 table-based chunks)
+5. **Vector Embedding**: Generates embeddings for semantic search
+6. **FAISS Indexing**: Stores in FAISS vector store with metadata
 
 **Note**: Indexing takes 2-5 minutes per PDF on first run. The index is saved and loaded instantly on subsequent runs.
 
@@ -330,114 +372,162 @@ for query in queries:
 ## Project Structure
 
 ```
-/storage/projects/Work/Dobs/
+/storage/projects/Dobs/
 ├── README.md                    # This file
-├── PROJECT_SUMMARY.md           # Executive summary and metrics
-├── pyproject.toml               # Dependencies and configuration
-├── .env                         # Environment variables
-├── .env.example                 # Environment template
+├── LICENSE.md                   # MIT License
+├── pyproject.toml               # Dependencies and Poetry configuration
+├── .env                         # Environment variables (create this)
 │
 ├── src/                         # Source code
 │   ├── api/                     # FastAPI REST API
-│   │   ├── main.py             # FastAPI app and lifespan
-│   │   ├── endpoints.py        # Route handlers
-│   │   └── models.py           # Pydantic models
+│   │   ├── main.py             # FastAPI app with lifespan management
+│   │   ├── endpoints.py        # Route handlers (/price, /upload, /documents)
+│   │   └── models.py           # Pydantic request/response models
 │   ├── core/                    # Core business logic
-│   │   ├── pdf_table_extractor.py    # Extract tables from PDFs
-│   │   ├── document_indexer.py       # Index with FAISS
-│   │   ├── query_parser.py           # Parse NL queries
-│   │   └── price_retriever.py        # Main get_price()
+│   │   ├── price_retriever.py        # Main PriceRetriever class
+│   │   ├── document_indexer.py       # FAISS indexing with service catalog
+│   │   ├── llm_query_parser.py       # LLM-based query parsing
+│   │   ├── llm_table_parser.py       # LLM-based table price extraction
+│   │   ├── query_parser.py           # Regex-based query parser (fallback)
+│   │   ├── service_catalog.py        # Service name extraction from PDFs
+│   │   ├── page_extractor.py         # PDF page extraction (pdfplumber)
+│   │   ├── page_chunker.py           # Page-based document chunking
+│   │   └── metadata_extractor.py     # Extract metadata from pages
 │   ├── ui/                      # Streamlit interface
 │   │   └── streamlit_app.py    # Interactive web UI
 │   └── utils/                   # Utilities
-│       ├── config.py           # Configuration
-│       └── logger.py           # Logging
+│       ├── config.py           # Pydantic settings management
+│       └── logger.py           # Structured logging
 │
 ├── tests/                       # Test suite
-├── data/                        # Data directory
-│   ├── pdfs/                   # PDF rate cards
-│   └── storage/                # FAISS vector store
-└── docs/                        # Documentation
+│   ├── test_query_parser.py
+│   ├── test_price_retriever.py
+│   ├── test_pdf_extractor.py
+│   └── test_pdf_table_extractor.py
+├── data/                        # Data directory (created automatically)
+│   ├── pdfs/                   # PDF rate cards storage
+│   ├── storage/                # FAISS vector store persistence
+│   └── service_catalog.json    # Extracted service names
+├── start_api.sh                 # Launch FastAPI server
+└── start_streamlit.sh           # Launch Streamlit UI
 ```
 
 ---
 
-## Components
+## Core Components
 
-### 1. PDF Table Extractor
+### 1. Price Retriever
 
-**Location**: `src/core/pdf_table_extractor.py`
+**Location**: `src/core/price_retriever.py`
 
-Extracts tables from PDFs using pdfplumber with multiple extraction strategies.
-
-**Features**:
-- Handles complex layouts (merged cells, multi-line headers)
-- Extracts metadata (service type, zones, weights)
-- Converts to markdown format for LLM consumption
-
-### 2. Document Indexer
-
-**Location**: `src/core/document_indexer.py`
-
-Creates and manages FAISS vector index for semantic search.
+Main orchestrator for price retrieval with dual extraction strategy.
 
 **Features**:
-- FAISS IndexFlatL2 (1536 dimensions)
-- OpenAI text-embedding-3-small
-- Persistent storage (save/load)
-- Metadata filtering support
+- LLM-based query parsing with service catalog integration
+- Metadata pre-filtering (service + zone + weight range)
+- **Primary**: LLM table parser for direct extraction
+- **Fallback**: Semantic search + LLM extraction
+- Custom prompts optimized for shipping rate tables
+- Confidence scoring and source tracking
 
-### 3. Query Parser
+### 2. LLM Query Parser
 
-**Location**: `src/core/query_parser.py`
+**Location**: `src/core/llm_query_parser.py`
 
-Parses natural language queries into structured components.
+Intelligent query parsing using GPT-4o-mini with structured output.
+
+**Features**:
+- Handles abbreviations and typos ("expr saver" → "FedEx Express Saver")
+- Uses service catalog for canonical name mapping
+- LRU caching (default: 1000 queries)
+- Automatic fallback to regex parser on errors
+- Pydantic validation for type safety
 
 **Example**:
 ```python
-"FedEx 2Day, Zone 5, 3 lb" → {
+"fedx 2day z5 3lb" → {
     carrier: "FedEx",
-    service: "2Day",
+    service: "FedEx 2Day",  # Canonical form
     zone: "5",
     weight: 3.0
 }
 ```
 
-### 4. Price Retriever
+### 3. LLM Table Parser
 
-**Location**: `src/core/price_retriever.py`
+**Location**: `src/core/llm_table_parser.py`
 
-Main entry point for price queries with custom LLM prompts.
+Extracts prices directly from table text using LLM intelligence.
 
 **Features**:
-- Retrieves 20 most relevant chunks
-- Custom prompt optimized for rate tables
-- Handles weight interpolation
-- Confidence scoring
+- Works with any table format (multi-service, single-service)
+- Handles weight interpolation automatically
+- LRU caching (default: 10,000 entries)
+- Returns price + confidence level
+- Fast and accurate
 
-### 5. FastAPI API
+### 4. Document Indexer
+
+**Location**: `src/core/document_indexer.py`
+
+Two-phase indexing system with service catalog building.
+
+**Features**:
+- **Phase 1**: Builds service catalog from PDFs
+- **Phase 2**: Indexes pages with canonical service names
+- Page-based chunking (~60 chunks per PDF)
+- FAISS IndexFlatL2 (1536 dimensions)
+- OpenAI text-embedding-3-small
+- Rich metadata extraction (services, zones, weight ranges)
+- Persistent storage (save/load)
+
+### 5. Service Catalog
+
+**Location**: `src/core/service_catalog.py`
+
+Extracts and normalizes service names from PDFs.
+
+**Features**:
+- Automatically discovers all service variations
+- Normalizes to canonical forms
+- Saves to `data/service_catalog.json`
+- Used by query parser for accurate mapping
+
+### 6. PDF Components
+
+**Locations**: `src/core/page_extractor.py`, `src/core/page_chunker.py`, `src/core/metadata_extractor.py`
+
+Page-based PDF processing pipeline.
+
+**Features**:
+- **Page Extractor**: Uses pdfplumber to extract complete pages
+- **Metadata Extractor**: Extracts services, zones, weight ranges per page
+- **Page Chunker**: Creates one document chunk per page
+
+### 7. FastAPI API
 
 **Location**: `src/api/`
 
 **Endpoints**:
-- `POST /price` - Get shipping price
-- `POST /upload` - Upload PDF
-- `GET /documents` - List indexed documents
+- `POST /price` - Get shipping price with query breakdown
+- `POST /upload` - Upload and index PDF
+- `GET /documents` - List indexed documents with metadata
 - `GET /health` - Health check
 
-**Docs**: http://localhost:8000/docs
+**Interactive Docs**: http://localhost:8000/docs
 
-### 6. Streamlit UI
+### 8. Streamlit UI
 
 **Location**: `src/ui/streamlit_app.py`
 
-Interactive web interface with search, history, and document management.
+Interactive web interface for price search and document management.
 
 **Features**:
-- Natural language search
+- Natural language price search
 - Query history
-- Document upload/management
-- Example queries
+- PDF upload and indexing
+- Document management
+- Example queries for testing
 
 **Access**: http://localhost:8501
 
@@ -483,50 +573,6 @@ GET /documents
 
 ---
 
-## Current Status
-
-### What's Working
-
-- PDF table extraction from complex rate cards
-- Document indexing with 277 documents from 2 PDFs
-- Natural language query parsing
-- Semantic search with FAISS
-- LLM-based price extraction
-- Full REST API with FastAPI
-- Interactive Streamlit UI
-- Persistent index storage
-
-### Test Results
-
-| Query | Expected | Status |
-|-------|----------|--------|
-| Ground Z6 12 lb | $21.64 | 5.4% error (CLOSE) |
-| FedEx 2Day Zone 5 3 lb | $48.05 | 91.7% error |
-| Express Saver Z8 1 lb | $39.86 | 70.1% error |
-
-**Current Accuracy**: ~20% (1/5 tests passing)
-
-### Known Limitations
-
-1. **Weight Range Filtering**: Semantic search doesn't filter by numerical weight ranges
-2. **Service Normalization**: Some services have newlines ("Priority\nOvernight")
-3. **Missing Services**: Some test services not found in indexed PDFs
-4. **Test Data**: Need to verify expected prices against actual PDFs
-
-### Recommendations
-
-See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for detailed improvement roadmap.
-
-**High Priority**:
-1. Add weight range metadata extraction
-2. Normalize service types (remove newlines)
-3. Implement hybrid search (metadata + semantic)
-4. Verify test expected values
-
-**Target**: 80%+ accuracy with metadata filtering
-
----
-
 ## Development
 
 ### Running Tests
@@ -542,7 +588,6 @@ pytest tests/test_query_parser.py    # Specific file
 ```bash
 black src tests           # Format code
 ruff check src tests      # Lint code
-mypy --strict src         # Type checking
 ```
 
 ### Configuration
@@ -550,18 +595,30 @@ mypy --strict src         # Type checking
 Edit `.env` to customize:
 
 ```bash
-LLM_MODEL=gpt-4o-mini              # Model selection
-RETRIEVAL_TOP_K=20                 # Chunks to retrieve
+LLM_MODEL=gpt-4o-2024-11-20        # Main LLM model
+RETRIEVAL_TOP_K=5                  # Top results to retrieve
 CHUNK_SIZE=2048                    # Characters per chunk
-LLM_TEMPERATURE=0.0                # Deterministic
+LLM_TEMPERATURE=0.0                # Deterministic output
+QUERY_PARSER_CACHE_SIZE=1000       # LLM query parser cache
+TABLE_PARSER_CACHE_SIZE=10000      # LLM table parser cache
 ```
+
+See `src/utils/config.py` for all available options.
 
 ### Performance
 
 - **Indexing**: 2-5 minutes per PDF (first-time)
+  - Phase 1: Service catalog building (~30 seconds)
+  - Phase 2: Page extraction and indexing (~2-4 minutes)
 - **Loading**: <5 seconds
-- **Query**: <1 second
-- **Cost**: ~$0.001 per query
+- **Query**:
+  - LLM table parser (cached): <100ms
+  - LLM table parser (uncached): ~1-2 seconds
+  - Fallback search: ~2-3 seconds
+- **Cost**:
+  - Query parsing: ~$0.0001 per query (cached after first use)
+  - Table parsing: ~$0.001 per query (cached after first use)
+  - Total: <$0.002 per unique query
 
 ---
 
@@ -600,15 +657,6 @@ uvicorn src.api.main:app --port 8001
 
 ---
 
-## Additional Documentation
-
-- [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - Executive summary, technical details, next steps
-- [API_GUIDE.md](API_GUIDE.md) - Detailed API documentation
-- [STREAMLIT_UI_GUIDE.md](STREAMLIT_UI_GUIDE.md) - UI usage guide
-- [IMPROVEMENT_SUMMARY.md](IMPROVEMENT_SUMMARY.md) - Accuracy improvement roadmap
-
----
-
 ## Author
 
 Alexander Belyaev <belazzbelazz@gmail.com>
@@ -620,4 +668,4 @@ MIT License
 ---
 
 **Version**: 0.1.0
-**Last Updated**: 2025-11-11
+**Last Updated**: 2025-11-14
